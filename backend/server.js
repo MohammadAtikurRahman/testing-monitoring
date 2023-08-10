@@ -225,29 +225,31 @@ app.get("/get-testscore", async (req, res) => {
 
             return {
                 ...entry._doc,
-                total_time: minutes.toString() // ensure that it's a string
+                total_time: minutes.toString()
             };
         });
 
-        const seen = new Set();
-        const uniqueEntries = [];
         let totalDuration = 0;
+        const uniqueDataMap = {};
 
         for (const entry of formattedData) {
-            const key = `${entry.win_start}-${entry.win_end}`;
-            if (!seen.has(key)) {
-                seen.add(key);
-                uniqueEntries.push(entry);
-                if (!isNaN(Number(entry.total_time))) {
-                    totalDuration += Number(entry.total_time);
-                }
+            if (!uniqueDataMap[entry.win_start] || moment(uniqueDataMap[entry.win_start].win_end, "M/D/YYYY, h:mm:ss A").isBefore(moment(entry.win_end, "M/D/YYYY, h:mm:ss A"))) {
+                uniqueDataMap[entry.win_start] = entry;
             }
         }
 
-        uniqueEntries.push({ 
+        const uniqueEntries = Object.values(uniqueDataMap);
+        
+        for (const entry of uniqueEntries) {
+            if (!isNaN(Number(entry.total_time))) {
+                totalDuration += Number(entry.total_time);
+            }
+        }
+
+        uniqueEntries.push({
             win_start: "SUM",
             win_end: "SUM",
-            total_time: totalDuration.toString() // convert the summation back to string
+            total_time: totalDuration.toString()
         });
 
         return res.status(200).json(uniqueEntries);
@@ -257,6 +259,8 @@ app.get("/get-testscore", async (req, res) => {
         return res.status(500).send('Internal server error');
     }
 });
+
+
 
 
 
