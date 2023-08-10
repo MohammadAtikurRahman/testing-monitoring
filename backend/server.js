@@ -208,9 +208,6 @@ app.get("/get-testscore", async (req, res) => {
     return res.status(200).json({ beneficiary: beneficiaries, pc: uniqueResult });
   });
   
-  
-
-
   app.get("/get-pc", async (req, res) => {
     try {
         let users = await user.find({});
@@ -219,30 +216,48 @@ app.get("/get-testscore", async (req, res) => {
             return res.status(404).send('Data not found');
         }
 
-        // Accessing the pc array from the first user record
         const pcData = users[0].pc;
 
         const formattedData = pcData.map(entry => {
             const winStart = moment(entry.win_start, "M/D/YYYY, h:mm:ss A");
             const winEnd = moment(entry.win_end, "M/D/YYYY, h:mm:ss A");
-
-            // Calculate difference in minutes
             const minutes = winEnd.diff(winStart, 'minutes');
 
             return {
                 ...entry._doc,
-                total_time: minutes
+                total_time: minutes.toString() // ensure that it's a string
             };
         });
 
-        return res.status(200).json(formattedData);
+        const seen = new Set();
+        const uniqueEntries = [];
+        let totalDuration = 0;
+
+        for (const entry of formattedData) {
+            const key = `${entry.win_start}-${entry.win_end}`;
+            if (!seen.has(key)) {
+                seen.add(key);
+                uniqueEntries.push(entry);
+                if (!isNaN(Number(entry.total_time))) {
+                    totalDuration += Number(entry.total_time);
+                }
+            }
+        }
+
+        uniqueEntries.push({ 
+            win_start: "SUM",
+            win_end: "SUM",
+            total_time: totalDuration.toString() // convert the summation back to string
+        });
+
+        return res.status(200).json(uniqueEntries);
 
     } catch (error) {
         console.error(error);
         return res.status(500).send('Internal server error');
     }
 });
-  
+
 
 
 // app.delete('/delete-csv', (req, res) => {
