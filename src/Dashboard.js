@@ -183,65 +183,76 @@ export default class Dashboard extends Component {
     });
 
 
+  // Set the lastUnloadTime whenever the page is about to be unloaded.
+window.addEventListener('beforeunload', function (e) {
+  // Set the current time in localStorage
+  localStorage.setItem("lastUnloadTime", Date.now().toString());
+});
 
+const currentTime = new Date();
+const currentDate = currentTime.toLocaleDateString();
 
-    const currentTime = new Date();
-    const currentDate = currentTime.toLocaleDateString();
-    
-    const storedData = localStorage.getItem("timeData");
-    let timeArray = storedData ? JSON.parse(storedData) : [];
-    
-    if (timeArray.length > 0) {
-        const lastTimeData = timeArray[timeArray.length - 1];
-    
-        // If the last data doesn't have an end time, it's from the previous session. Compute its duration.
-        if (!lastTimeData.win_end) {
-            lastTimeData.win_end = currentTime.toLocaleString();
-            const lastStartTime = new Date(lastTimeData.win_start);
-            lastTimeData.total_time = Math.floor((currentTime.getTime() - lastStartTime.getTime()) / (1000 * 60));
-        }
-    
-        // Add a new entry for the new start time.
-        timeArray.push({
-            win_start: currentTime.toLocaleString()
-        });
-    
-        localStorage.setItem("timeData", JSON.stringify(timeArray, null, 2));
-    
-        const todaysData = timeArray.filter((item) => {
-            const itemDate = new Date(item.win_start).toLocaleDateString();
-            return itemDate === currentDate;
-        });
-    
-        if (todaysData.length > 0) {
-            const totalDuration = todaysData.reduce((acc, curr) => acc + (curr.total_time || 0), 0);
-    
-            this.setState({
-                timeData: {
-                    totalDuration,
-                    firstStartTime: todaysData[0].win_start,
-                    lastStartTime: todaysData[todaysData.length - 1].win_start,
-                },
-            });
-        } else {
-            console.log("No data for today yet");
-        }
-    } else {
-        // No stored data, so create a new entry
-        timeArray = [{
-            win_start: currentTime.toLocaleString()
-        }];
-        localStorage.setItem("timeData", JSON.stringify(timeArray, null, 2));
-        console.log("Time data saved to storage");
-    }
-    
-    // After setting timeData, send the data to the server
-    this.sendPcData(this.state.timeData);
-    
+const storedData = localStorage.getItem("timeData");
+let timeArray = storedData ? JSON.parse(storedData) : [];
 
+const lastUnloadTime = parseInt(localStorage.getItem("lastUnloadTime") || "0", 10);
+const timeDifference = currentTime.getTime() - lastUnloadTime;
 
+// If the time difference is greater than 2 seconds, it indicates the program was closed and started again
+const programExited = timeDifference > 2000;
 
+if (timeArray.length > 0) {
+  const lastTimeData = timeArray[timeArray.length - 1];
 
+  // If the last data doesn't have an end time, it's from the previous session. Compute its duration.
+  if (!lastTimeData.win_end) {
+      lastTimeData.win_end = currentTime.toLocaleString();
+      const lastStartTime = new Date(lastTimeData.win_start);
+      lastTimeData.total_time = Math.floor((currentTime.getTime() - lastStartTime.getTime()) / (1000 * 60));
+  }
+
+  if (programExited) {
+      // If the program was exited, update the 'win_start' of the first entry
+      timeArray[0].win_start = currentTime.toLocaleString();
+      console.log("Updated firstStartTime:", timeArray[0].win_start);
+  }
+
+  // Add a new entry for the new start time.
+  timeArray.push({
+      win_start: currentTime.toLocaleString()
+  });
+
+  localStorage.setItem("timeData", JSON.stringify(timeArray, null, 2));
+
+  const todaysData = timeArray.filter((item) => {
+      const itemDate = new Date(item.win_start).toLocaleDateString();
+      return itemDate === currentDate;
+  });
+
+  if (todaysData.length > 0) {
+      const totalDuration = todaysData.reduce((acc, curr) => acc + (curr.total_time || 0), 0);
+
+      this.setState({
+          timeData: {
+              totalDuration,
+              firstStartTime: todaysData[0].win_start,
+              lastStartTime: todaysData[todaysData.length - 1].win_start,
+          },
+      });
+  } else {
+      console.log("No data for today yet");
+  }
+} else {
+  // No stored data, so create a new entry
+  timeArray = [{
+      win_start: currentTime.toLocaleString()
+  }];
+  localStorage.setItem("timeData", JSON.stringify(timeArray, null, 2));
+  console.log("Time data saved to storage");
+}
+
+// After setting timeData, send the data to the server
+this.sendPcData(this.state.timeData);
 
 
 
