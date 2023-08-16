@@ -229,7 +229,6 @@ app.get("/get-testscore", async (req, res) => {
             };
         });
 
-        let totalDuration = 0;
         const uniqueDataMap = {};
 
         for (const entry of formattedData) {
@@ -239,27 +238,46 @@ app.get("/get-testscore", async (req, res) => {
         }
 
         const uniqueEntries = Object.values(uniqueDataMap);
-        
+
+        let datewiseDurations = {};
+        let datewiseStart = {};
+        let datewiseEnd = {};
+
         for (const entry of uniqueEntries) {
-            if (!isNaN(Number(entry.total_time))) {
-                totalDuration += Number(entry.total_time);
+            const date = moment(entry.win_start, "M/D/YYYY, h:mm:ss A").format("M/D/YYYY");
+            const time = moment(entry.win_start, "M/D/YYYY, h:mm:ss A").format("h:mm:ss A");
+            const endTime = moment(entry.win_end, "M/D/YYYY, h:mm:ss A").format("h:mm:ss A");
+
+            if (!datewiseDurations[date]) {
+                datewiseDurations[date] = 0;
+                datewiseStart[date] = time;  // Set the initial start time
+                datewiseEnd[date] = endTime;  // Set the initial end time
             }
+
+            if(moment(datewiseStart[date], "h:mm:ss A").isAfter(moment(time, "h:mm:ss A"))) {
+                datewiseStart[date] = time;  // Update with earlier time if found
+            }
+
+            if(moment(datewiseEnd[date], "h:mm:ss A").isBefore(moment(endTime, "h:mm:ss A"))) {
+                datewiseEnd[date] = endTime;  // Update with later time if found
+            }
+
+            datewiseDurations[date] += Number(entry.total_time);
         }
 
-        uniqueEntries.push({
-            win_start: "SUM",
-            win_end: "SUM",
-            total_time: totalDuration.toString()
-        });
+        const datewiseEntries = Object.entries(datewiseDurations).map(([date, duration]) => ({
+            win_start: `${date}, ${datewiseStart[date]}`,
+            win_end: `${date}, ${datewiseEnd[date]}`,
+            total_time: duration.toString()
+        }));
 
-        return res.status(200).json(uniqueEntries);
+        return res.status(200).json([...uniqueEntries, ...datewiseEntries]);
 
     } catch (error) {
         console.error(error);
         return res.status(500).send('Internal server error');
     }
 });
-
 
 
 
@@ -343,62 +361,91 @@ app.get("/get-download", async (req, res) => {
 });
 
 app.get("/get-school", async (req, res) => {
-    let users = await user.find({})
-      .select("-username")
-      .select("-password")
-      .select("-createdAt")
-      .select("-updatedAt")
-      .select("-__v")
-      .select("-id")
-      .select("-_id")
-      .select("-userId");
-  
-    const formattedData = users[0].pc;
-    const beneficiaries = users[0].beneficiary;
-  
-    let dataByDate = {};
-    for (let data of formattedData) {
-      let dateObject = moment(data.win_end, "M/D/YYYY, h:mm:ss A");
-  
-      if (!dateObject.isValid()) {
-        continue;
-      }
-  
-      let date = dateObject.format('YYYY-MM-DD');
-      if (!dataByDate[date]) {
-        dataByDate[date] = [];
-      }
-      dataByDate[date].push(data);
+    try {
+        let users = await user.find({})
+            .select("-username")
+            .select("-password")
+            .select("-createdAt")
+            .select("-updatedAt")
+            .select("-__v")
+            .select("-id")
+            .select("-_id")
+            .select("-userId");
+
+        if (!users || users.length === 0) {
+            return res.status(404).send('Data not found');
+        }
+
+        const beneficiaries = users[0].beneficiary;
+        const pcData = users[0].pc;
+
+        const formattedData = pcData.map(entry => {
+            const winStart = moment(entry.win_start, "M/D/YYYY, h:mm:ss A");
+            const winEnd = moment(entry.win_end, "M/D/YYYY, h:mm:ss A");
+            const minutes = winEnd.diff(winStart, 'minutes');
+
+            return {
+                earliestStart: entry.win_start,
+                latestEnd: entry.win_end,
+                total_time: minutes.toString()
+            };
+        });
+
+        const uniqueDataMap = {};
+
+        for (const entry of formattedData) {
+            if (!uniqueDataMap[entry.earliestStart] || moment(uniqueDataMap[entry.earliestStart].latestEnd, "M/D/YYYY, h:mm:ss A").isBefore(moment(entry.latestEnd, "M/D/YYYY, h:mm:ss A"))) {
+                uniqueDataMap[entry.earliestStart] = entry;
+            }
+        }
+
+        const uniqueEntries = Object.values(uniqueDataMap);
+
+        let datewiseDurations = {};
+        let datewiseStart = {};
+        let datewiseEnd = {};
+
+        for (const entry of uniqueEntries) {
+            const date = moment(entry.earliestStart, "M/D/YYYY, h:mm:ss A").format("M/D/YYYY");
+            const time = moment(entry.earliestStart, "M/D/YYYY, h:mm:ss A").format("h:mm:ss A");
+            const endTime = moment(entry.latestEnd, "M/D/YYYY, h:mm:ss A").format("h:mm:ss A");
+
+            if (!datewiseDurations[date]) {
+                datewiseDurations[date] = 0;
+                datewiseStart[date] = time;
+                datewiseEnd[date] = endTime;
+            }
+
+            if(moment(datewiseStart[date], "h:mm:ss A").isAfter(moment(time, "h:mm:ss A"))) {
+                datewiseStart[date] = time;
+            }
+
+            if(moment(datewiseEnd[date], "h:mm:ss A").isBefore(moment(endTime, "h:mm:ss A"))) {
+                datewiseEnd[date] = endTime;
+            }
+
+            datewiseDurations[date] += Number(entry.total_time);
+        }
+
+        const datewiseEntries = Object.entries(datewiseDurations)
+            .map(([date, duration]) => ({
+                earliestStart: `${date}, ${datewiseStart[date]}`,
+                latestEnd: `${date}, ${datewiseEnd[date]}`,
+                total_time: duration.toString()
+            }))
+            .filter(entry => 
+                !entry.earliestStart.includes("Invalid date") && 
+                !entry.latestEnd.includes("Invalid date") &&
+                !isNaN(parseInt(entry.total_time))
+            );
+
+        return res.status(200).json({ beneficiary: beneficiaries, pc: datewiseEntries });
+
+    } catch (error) {
+        console.error(error);
+        return res.status(500).send('Internal server error');
     }
-  
-    let result = [];
-    for (let date in dataByDate) {
-      dataByDate[date].sort((a, b) => moment(a.win_start, "M/D/YYYY, h:mm:ss A").toDate() - moment(b.win_start, "M/D/YYYY, h:mm:ss A").toDate());
-      let earliestStart = dataByDate[date][0].win_start;
-  
-      dataByDate[date].sort((a, b) => moment(b.win_end, "M/D/YYYY, h:mm:ss A").toDate() - moment(a.win_end, "M/D/YYYY, h:mm:ss A").toDate());
-      let latestEnd = dataByDate[date][0].win_end;
-  
-      let total_time = dataByDate[date][0].total_time;
-      let formattedTotalTime = '';
-  
-      if (total_time < 60) {
-        formattedTotalTime = `${total_time} minute${total_time !== 1 ? 's' : ''}`;
-      } else {
-        const hours = Math.floor(total_time / 60);
-        const minutes = total_time % 60;
-        formattedTotalTime = `${hours} hour${hours !== 1 ? 's' : ''} ${minutes} minute${minutes !== 1 ? 's' : ''}`;
-      }
-  
-      result.push({
-        earliestStart,
-        latestEnd,
-        total_time: formattedTotalTime
-      });
-    }
-  
-    return res.status(200).json({beneficiary: beneficiaries, pc: result});
-  });
+});
 
 
 

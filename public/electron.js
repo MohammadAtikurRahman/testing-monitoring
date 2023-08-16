@@ -1,4 +1,4 @@
-const { app, BrowserWindow } = require('electron');
+const { app, BrowserWindow,Menu } = require('electron');
 const path = require('path');
 
 const isDev = process.env.NODE_ENV !== 'production';
@@ -14,7 +14,9 @@ function createWindow() {
     webPreferences: {
       nodeIntegration: true,
     },
-  });
+  });  
+  Menu.setApplicationMenu(null);
+
 
   // Load the loading screen first
   win.loadURL(

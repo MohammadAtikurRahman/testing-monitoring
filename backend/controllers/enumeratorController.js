@@ -62,22 +62,42 @@ async function findUserid(req,res){
 
 
 
-async function deletecsv(req, res){
-    // path to the csv file in the public directory
-    const csvFilePath = path.join(__dirname, '..', '..', 'public', 'video_information.csv');
-  
-    fs.unlink(csvFilePath, function(error) {
-      if (error) {
-        console.error("Error deleting CSV file:", error);
-        res.status(500).send('Error deleting file');
-      } else {
-        console.log("File deleted successfully!");
-        res.status(200).send('File deleted successfully');
-      }
-    });
-  };
-  
+async function deletecsv(req, res) {
+  // Path to the directory containing the CSV files
+  const csvDirectoryPath = path.join(__dirname, '..', '..', 'public');
 
+  // Read the directory
+  fs.readdir(csvDirectoryPath, function(err, files) {
+      if (err) {
+          console.error("Error reading the directory:", err);
+          return res.status(500).send('Error reading the directory');
+      }
+
+      // Filter out only the .csv files
+      const csvFiles = files.filter(file => path.extname(file) === '.csv');
+
+      if (csvFiles.length === 0) {
+          console.log("No CSV files found to delete.");
+          return res.status(404).send('No CSV files found');
+      }
+
+      // Loop through the .csv files and delete each
+      for (const file of csvFiles) {
+          const filePath = path.join(csvDirectoryPath, file);
+          fs.unlink(filePath, function(error) {
+              if (error) {
+                  console.error(`Error deleting ${file}:`, error);
+                  return res.status(500).send(`Error deleting ${file}`);
+              } else {
+                  console.log(`${file} deleted successfully!`);
+              }
+          });
+      }
+
+      // Send a response once all files are processed
+      res.status(200).send('All CSV files deleted successfully');
+  });
+}
 
 
 
