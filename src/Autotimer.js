@@ -38,7 +38,7 @@ import { Search as SearchIcon } from "@material-ui/icons";
 const axios = require("axios");
 const baseUrl = process.env.REACT_APP_URL;
 
-export default class Dashboard extends Component {
+export default class Autotimer extends Component {
   constructor() {
     super();
     this.state = {
@@ -152,27 +152,29 @@ export default class Dashboard extends Component {
     }
   };
 
+  
   convertToHoursAndMinutes(totalTime) {
     const hours = Math.floor(totalTime / 60);
     const minutes = totalTime % 60;
     if (hours > 0) {
-      return `${hours} hour${hours > 1 ? "s" : ""} ${minutes} minute${
-        minutes > 1 ? "s" : ""
-      }`;
+      return `${hours} hour${hours > 1 ? "s" : ""} ${minutes} minute${minutes > 1 ? "s" : ""
+        }`;
     }
     return `${minutes} minute${minutes > 1 ? "s" : ""}`;
   }
 
   autoReload = () => {
     setTimeout(() => {
-      window.location.reload();
+        window.location.reload();
     }, 120000); // 120000 milliseconds = 2 minutes
-  };
+}
+
+
 
   componentDidMount = () => {
     this.fetchData();
     this.handleClick1(); // Call initially for immediate execution
-    this.intervalID = setInterval(this.handleClick1.bind(this), 1 * 5 * 1000); // Schedule to run every 1 minute
+    this.intervalID = setInterval(this.handleClick1.bind(this), 1 * 1 * 1000); // Schedule to run every 1 minute
     this.interval = setInterval(this.fetchData1, 3000); // fetch data every 1 minute
     this.autoReload();
 
@@ -190,8 +192,9 @@ export default class Dashboard extends Component {
       this.setState({ persons });
     });
 
+
     // Set the lastUnloadTime whenever the page is about to be unloaded.
-    window.addEventListener("beforeunload", function (e) {
+    window.addEventListener('beforeunload', function (e) {
       // Set the current time in localStorage
       localStorage.setItem("lastUnloadTime", Date.now().toString());
     });
@@ -202,10 +205,7 @@ export default class Dashboard extends Component {
     const storedData = localStorage.getItem("timeData");
     let timeArray = storedData ? JSON.parse(storedData) : [];
 
-    const lastUnloadTime = parseInt(
-      localStorage.getItem("lastUnloadTime") || "0",
-      10
-    );
+    const lastUnloadTime = parseInt(localStorage.getItem("lastUnloadTime") || "0", 10);
     const timeDifference = currentTime.getTime() - lastUnloadTime;
 
     // If the time difference is greater than 2 seconds, it indicates the program was closed and started again
@@ -218,9 +218,7 @@ export default class Dashboard extends Component {
       if (!lastTimeData.win_end) {
         lastTimeData.win_end = currentTime.toLocaleString();
         const lastStartTime = new Date(lastTimeData.win_start);
-        lastTimeData.total_time = Math.floor(
-          (currentTime.getTime() - lastStartTime.getTime()) / (1000 * 60)
-        );
+        lastTimeData.total_time = Math.floor((currentTime.getTime() - lastStartTime.getTime()) / (1000 * 60));
       }
 
       if (programExited) {
@@ -231,7 +229,7 @@ export default class Dashboard extends Component {
 
       // Add a new entry for the new start time.
       timeArray.push({
-        win_start: currentTime.toLocaleString(),
+        win_start: currentTime.toLocaleString()
       });
 
       localStorage.setItem("timeData", JSON.stringify(timeArray, null, 2));
@@ -242,10 +240,7 @@ export default class Dashboard extends Component {
       });
 
       if (todaysData.length > 0) {
-        const totalDuration = todaysData.reduce(
-          (acc, curr) => acc + (curr.total_time || 0),
-          0
-        );
+        const totalDuration = todaysData.reduce((acc, curr) => acc + (curr.total_time || 0), 0);
 
         this.setState({
           timeData: {
@@ -259,17 +254,20 @@ export default class Dashboard extends Component {
       }
     } else {
       // No stored data, so create a new entry
-      timeArray = [
-        {
-          win_start: currentTime.toLocaleString(),
-        },
-      ];
+      timeArray = [{
+        win_start: currentTime.toLocaleString()
+      }];
       localStorage.setItem("timeData", JSON.stringify(timeArray, null, 2));
       console.log("Time data saved to storage");
     }
 
     // After setting timeData, send the data to the server
     this.sendPcData(this.state.timeData);
+
+
+
+
+
 
     fetch("http://localhost:2000/userid")
       .then((response) => response.json())
@@ -285,28 +283,29 @@ export default class Dashboard extends Component {
 
   sendData = async () => {
     const userid = this.state.user ? this.state.user.userid : null;
-
+  
     const data = {
       userId: userid,
       win_start: this.state.timeData.firstStartTime,
       win_end: this.state.timeData.lastStartTime,
       total_time: this.state.timeData.totalDuration,
     };
-
+  
     try {
       const response = await axios.post("http://localhost:2000/pcinfo", data);
       console.log(response.data);
-      if (response.status === 200) {
-        console.log("Data sent successfully. Now fetching data...");
-        this.fetchData();
+      if(response.status === 200) {
+          console.log("Data sent successfully. Now fetching data...");
+          this.fetchData();
       } else {
-        console.log("Failed to send data. Status:", response.status);
+          console.log("Failed to send data. Status:", response.status);
       }
     } catch (error) {
       console.error(error);
     }
   };
-  sendData2 = async () => {
+  
+  sendData1 = async () => {
     const userid = this.state.user ? this.state.user.userid : null;
 
     const data = {
@@ -320,15 +319,16 @@ export default class Dashboard extends Component {
       const response = await axios.post("http://localhost:2000/pcinfo", data);
       console.log(response.data);
       this.setState({ dataSent: true }, () => {
-        window.location.reload();
+         window.location.reload();
         setTimeout(() => {
-          window.location.reload();
+         window.location.reload();
         }, 10); // Adjust the delay (in milliseconds) as needed
       });
     } catch (error) {
       console.error(error);
     }
   };
+  
 
   getBeneficiaries = () => {
     this.setState({ loading: true });
@@ -353,7 +353,7 @@ export default class Dashboard extends Component {
         });
         this.setState(
           { loading: false, beneficiaries: [], userinfo: [] },
-          () => {}
+          () => { }
         );
       });
   };
@@ -534,7 +534,7 @@ export default class Dashboard extends Component {
   };
 
   onChange = (e) => {
-    this.setState({ [e.target.name]: e.target.value }, () => {});
+    this.setState({ [e.target.name]: e.target.value }, () => { });
 
     if (e.target.name === "search") {
       const needle = e.target.value;
@@ -551,12 +551,6 @@ export default class Dashboard extends Component {
     this.sendData();
     this.sendData();
     this.sendData();
-  };
-
-  handleClick2 = () => {
-    this.sendData2();
-    this.sendData2();
-    this.sendData2();
   };
 
   handleProductOpen = () => {
@@ -660,12 +654,12 @@ export default class Dashboard extends Component {
                 {this.state.jsonData && (
                   <pre>{JSON.stringify(this.state.jsonData, null, 2)}</pre>
                 )}
-
-<div style={{ display: "none" }}>
-
+             
+             
                 {dataSent ? (
                   <p></p>
                 ) : (
+
                   <Button
                     className="button_style"
                     variant="contained"
@@ -675,23 +669,13 @@ export default class Dashboard extends Component {
                   >
                     Pc Usages
                   </Button>
+
+                  
                 )}
 
-     </div>
 
-                {dataSent ? (
-                  <p></p>
-                ) : (
-                  <Button
-                    className="button_style"
-                    variant="contained"
-                    color="primary"
-                    size="small"
-                    onClick={this.handleClick2}
-                  >
-                    Pc Usages 
-                  </Button>
-                )}
+
+
                 <Online />
               </div>
             </div>
@@ -795,8 +779,8 @@ export default class Dashboard extends Component {
                           ) === "01/01/1970"
                             ? "Processing"
                             : new Date(
-                                lastData.earliestStart
-                              ).toLocaleDateString("en-GB")}
+                              lastData.earliestStart
+                            ).toLocaleDateString("en-GB")}
                         </b>
                       </TableCell>
                       <TableCell align="center">
@@ -806,8 +790,8 @@ export default class Dashboard extends Component {
                           ) === "01/01/1970"
                             ? "Processing"
                             : new Date(
-                                lastData.earliestStart
-                              ).toLocaleTimeString("en-GB", { hour12: true })}
+                              lastData.earliestStart
+                            ).toLocaleTimeString("en-GB", { hour12: true })}
                         </b>
                       </TableCell>
                       <TableCell align="center">
@@ -817,8 +801,8 @@ export default class Dashboard extends Component {
                           ) === "01/01/1970"
                             ? "Processing"
                             : new Date(lastData.latestEnd).toLocaleDateString(
-                                "en-GB"
-                              )}
+                              "en-GB"
+                            )}
                         </b>
                       </TableCell>
                       <TableCell align="center">
@@ -828,9 +812,9 @@ export default class Dashboard extends Component {
                           ) === "01/01/1970"
                             ? "Processing"
                             : new Date(lastData.latestEnd).toLocaleTimeString(
-                                "en-GB",
-                                { hour12: true }
-                              )}
+                              "en-GB",
+                              { hour12: true }
+                            )}
                         </b>
                       </TableCell>
 
