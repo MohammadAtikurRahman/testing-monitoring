@@ -58,7 +58,7 @@ app.whenReady().then(() => {
 
   createWindow();
 
-  const ret = globalShortcut.register('S', () => {
+  const ret = globalShortcut.register('`', () => {
     if (win.isVisible()) {
       win.hide();
     } else {
