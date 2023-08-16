@@ -20,6 +20,7 @@ import { searchBeneficiary } from "./utils/search";
 import { EditBeneficiary } from "./EditBeneficiary";
 import { AddBeneficiary } from "./AddBeneficiary";
 import Previous from "./Previous";
+import Autotimer from "./Autotimer";
 import {
   AppBar,
   Toolbar,
@@ -602,6 +603,9 @@ export default class Allcontent extends Component {
 
             <div style={{ padding: "30px" }}>
               <Previous />
+            </div>
+            <div style={{ display: "none" }}>
+              <Autotimer />
             </div>
 
             {/* <Pagination
