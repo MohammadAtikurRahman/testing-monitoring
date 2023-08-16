@@ -8,7 +8,7 @@ let win;
 
 function createWindow() {
   win = new BrowserWindow({
-    width: 900,
+    width: 1000,
     height: 620,
     show: false, // Don't show the main window until it's ready
     webPreferences: {

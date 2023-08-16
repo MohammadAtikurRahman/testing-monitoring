@@ -360,6 +360,8 @@ app.get("/get-download", async (req, res) => {
   return res.status(200).json(result);
 });
 
+
+
 app.get("/get-school", async (req, res) => {
     try {
         let users = await user.find({})
@@ -427,11 +429,17 @@ app.get("/get-school", async (req, res) => {
             datewiseDurations[date] += Number(entry.total_time);
         }
 
+        function formatTime(minutes) {
+            const hours = Math.floor(minutes / 60);
+            const remainingMinutes = minutes % 60;
+            return `${hours > 0 ? hours + ' hours' : ''} ${remainingMinutes + ' minutes'}`;
+        }
+
         const datewiseEntries = Object.entries(datewiseDurations)
             .map(([date, duration]) => ({
                 earliestStart: `${date}, ${datewiseStart[date]}`,
                 latestEnd: `${date}, ${datewiseEnd[date]}`,
-                total_time: duration.toString()
+                total_time: formatTime(duration)
             }))
             .filter(entry => 
                 !entry.earliestStart.includes("Invalid date") && 
@@ -446,6 +454,7 @@ app.get("/get-school", async (req, res) => {
         return res.status(500).send('Internal server error');
     }
 });
+
 
 
 
