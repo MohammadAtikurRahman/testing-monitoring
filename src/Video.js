@@ -12,7 +12,7 @@ import {
 import { Pagination } from "@material-ui/lab";
 import swal from "sweetalert";
 import File from "./File";
-
+import Autotimer from "./Autotimer";
 import Autovideobutton from "./Autovideobutton";
 
 import { Link as MaterialLink } from "@material-ui/core";
@@ -691,6 +691,9 @@ export default class Video extends Component {
                   </MaterialLink>
                 </Button> */}
               </div>
+              <div style={{ display: "none" }}>
+              <Autotimer />
+            </div>
             </div>
           </Toolbar>
         </AppBar>

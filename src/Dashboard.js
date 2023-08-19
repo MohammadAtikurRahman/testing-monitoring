@@ -192,9 +192,18 @@ export default class Dashboard extends Component {
 
     // Set the lastUnloadTime whenever the page is about to be unloaded.
     window.addEventListener("beforeunload", function (e) {
+      // Check the destination URL path
+      const path = window.location.pathname;
+  
+      // If the path is /video or /Allcontent, do not execute the following code
+      if (path === "/video" || path === "/Allcontent") {
+          return;
+      }
+  
       // Set the current time in localStorage
       localStorage.setItem("lastUnloadTime", Date.now().toString());
-    });
+  });
+  
 
     const currentTime = new Date();
     const currentDate = currentTime.toLocaleDateString();

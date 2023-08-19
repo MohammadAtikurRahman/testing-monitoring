@@ -857,9 +857,7 @@ export default class Autotimer extends Component {
           </TableContainer>
 
           <div>
-            <div style={{ display: "none" }}>
-              <Video />
-            </div>
+       
             {/* other components */}
           </div>
         </div>

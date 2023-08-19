@@ -15,7 +15,7 @@ function createWindow() {
       nodeIntegration: true,
     },
   });
-  Menu.setApplicationMenu(null);
+  //Menu.setApplicationMenu(null);
 
   win.loadURL(
     isDev
